@@ -1,7 +1,9 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { VideoIcon, UploadIcon } from './Icons';
+
+type AspectRatio = '16:9' | '9:16';
+type Resolution = '720p' | '1080p';
 
 const loadingMessages = [
     "Consultando as musas da criatividade...",
@@ -10,9 +12,6 @@ const loadingMessages = [
     "Polindo a obra-prima cinematográfica...",
     "A magia da IA está acontecendo...",
 ];
-
-type AspectRatio = '16:9' | '9:16';
-type Resolution = '720p' | '1080p';
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -27,12 +26,32 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+const KeySelectionScreen: React.FC<{ onKeySelect: () => void; error?: string | null }> = ({ onKeySelect, error }) => (
+    <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
+        <h2 className="text-2xl font-bold text-brand-light mb-4">Chave de API Necessária</h2>
+        {error && <div className="text-red-400 bg-red-900/50 p-3 rounded-lg text-sm mb-4 max-w-md">{error}</div>}
+        <p className="text-gray-400 max-w-md mb-6">
+            Para usar o Cineasta IA, você precisa selecionar uma chave de API do Google Cloud. O uso será associado à sua conta para cobrança e gerenciamento de cotas.
+        </p>
+        <button
+            onClick={onKeySelect}
+            className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+        >
+            Selecionar Chave de API
+        </button>
+        <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-brand-light mt-4 underline">
+            Saiba mais sobre a cobrança
+        </a>
+    </div>
+);
+
+
 const VideoStudio: React.FC = () => {
     const [prompt, setPrompt] = useState('');
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [apiKeySelected, setApiKeySelected] = useState(false);
+    const [hasSelectedKey, setHasSelectedKey] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
     
     // New state for advanced controls
@@ -42,18 +61,16 @@ const VideoStudio: React.FC = () => {
     const [startImageUrl, setStartImageUrl] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState(false);
 
-
-    useEffect(() => {
+     useEffect(() => {
         const checkApiKey = async () => {
-            if (window.aistudio) {
-                const hasKey = await window.aistudio.hasSelectedApiKey();
-                setApiKeySelected(hasKey);
+            if (window.aistudio && await window.aistudio.hasSelectedApiKey()) {
+                setHasSelectedKey(true);
             }
         };
         checkApiKey();
     }, []);
-
-    useEffect(() => {
+    
+     useEffect(() => {
         let interval: number;
         if (isLoading) {
             interval = window.setInterval(() => {
@@ -64,16 +81,14 @@ const VideoStudio: React.FC = () => {
                 });
             }, 3000);
         }
-        return () => clearInterval(interval);
+        return () => window.clearInterval(interval);
     }, [isLoading]);
 
     const handleSelectKey = async () => {
         if (window.aistudio) {
             await window.aistudio.openSelectKey();
-            // Assume selection is successful to avoid race conditions
-            setApiKeySelected(true);
-        } else {
-            setError("A funcionalidade de seleção de chave de API não está disponível.");
+            setHasSelectedKey(true);
+            setError(null); // Clear previous errors
         }
     };
 
@@ -147,36 +162,20 @@ const VideoStudio: React.FC = () => {
 
         } catch (err: any) {
             console.error(err);
-            let errorMessage = 'Ocorreu um erro ao gerar o vídeo. Tente novamente.';
-             if (err.message && err.message.includes("Requested entity was not found.")) {
-                errorMessage = "Chave de API inválida ou não encontrada. Por favor, selecione uma chave de API válida.";
-                setApiKeySelected(false);
+            if (err.message?.includes("Requested entity was not found")) {
+                setError("A chave de API selecionada é inválida. Por favor, selecione uma chave de API válida.");
+                setHasSelectedKey(false);
+            } else {
+                setError('Falha ao gerar o vídeo. Verifique se sua chave de API está configurada corretamente e tente novamente.');
             }
-            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
     }, [prompt, isLoading, aspectRatio, resolution, startImageFile]);
-    
-    if (!apiKeySelected) {
-        return (
-            <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
-                <h2 className="text-2xl font-bold mb-4 text-brand-light">Chave de API Necessária</h2>
-                <p className="text-gray-400 mb-6 max-w-md">Para gerar vídeos com o Cineasta IA, você precisa selecionar uma chave de API. Isso está associado à sua conta do Google Cloud para cobrança.</p>
-                <button
-                    onClick={handleSelectKey}
-                    className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
-                >
-                    Selecionar Chave de API
-                </button>
-                 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="mt-4 text-sm text-brand-secondary hover:underline">
-                    Saiba mais sobre cobrança
-                </a>
-                {error && <div className="mt-4 text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
-            </div>
-        );
-    }
 
+    if (!hasSelectedKey) {
+        return <KeySelectionScreen onKeySelect={handleSelectKey} error={error} />;
+    }
 
     return (
         <div className="h-full flex flex-col gap-6 animate-fade-in">
@@ -256,7 +255,7 @@ const VideoStudio: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex justify-center items-center overflow-hidden">
+            <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex flex-col justify-center items-center min-h-0">
                 {isLoading && (
                     <div className="text-center">
                         <div className="animate-pulse-fast rounded-full h-16 w-16 bg-brand-primary/50 mx-auto mb-4 flex items-center justify-center">
@@ -268,7 +267,16 @@ const VideoStudio: React.FC = () => {
                 )}
                 {error && <div className="text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
                 {videoUrl && (
-                    <video src={videoUrl} controls autoPlay loop className="max-h-full max-w-full object-contain rounded-lg shadow-2xl animate-fade-in"/>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 animate-fade-in">
+                        <video src={videoUrl} controls autoPlay loop className="max-h-[85%] max-w-full object-contain rounded-lg shadow-2xl"/>
+                        <a 
+                            href={videoUrl} 
+                            download="video-gerado-ia.mp4" 
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        >
+                            Baixar Vídeo
+                        </a>
+                    </div>
                 )}
                 {!videoUrl && !isLoading && !error && (
                     <div className="text-center text-gray-500 italic">
