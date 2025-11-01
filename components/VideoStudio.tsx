@@ -1,0 +1,284 @@
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { GoogleGenAI } from '@google/genai';
+import { VideoIcon, UploadIcon } from './Icons';
+
+const loadingMessages = [
+    "Consultando as musas da criatividade...",
+    "Renderizando pixels em movimento...",
+    "Dando vida à sua imaginação...",
+    "Polindo a obra-prima cinematográfica...",
+    "A magia da IA está acontecendo...",
+];
+
+type AspectRatio = '16:9' | '9:16';
+type Resolution = '720p' | '1080p';
+
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            // remove the header `data:image/png;base64,`
+            resolve(result.split(',')[1]);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
+
+const VideoStudio: React.FC = () => {
+    const [prompt, setPrompt] = useState('');
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [apiKeySelected, setApiKeySelected] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
+    
+    // New state for advanced controls
+    const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
+    const [resolution, setResolution] = useState<Resolution>('720p');
+    const [startImageFile, setStartImageFile] = useState<File | null>(null);
+    const [startImageUrl, setStartImageUrl] = useState<string | null>(null);
+    const [dragOver, setDragOver] = useState(false);
+
+
+    useEffect(() => {
+        const checkApiKey = async () => {
+            if (window.aistudio) {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setApiKeySelected(hasKey);
+            }
+        };
+        checkApiKey();
+    }, []);
+
+    useEffect(() => {
+        let interval: number;
+        if (isLoading) {
+            interval = window.setInterval(() => {
+                setLoadingMessage(prev => {
+                    const currentIndex = loadingMessages.indexOf(prev);
+                    const nextIndex = (currentIndex + 1) % loadingMessages.length;
+                    return loadingMessages[nextIndex];
+                });
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [isLoading]);
+
+    const handleSelectKey = async () => {
+        if (window.aistudio) {
+            await window.aistudio.openSelectKey();
+            // Assume selection is successful to avoid race conditions
+            setApiKeySelected(true);
+        } else {
+            setError("A funcionalidade de seleção de chave de API não está disponível.");
+        }
+    };
+
+    const handleFileSelect = (file: File | null) => {
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                setError("Por favor, selecione um arquivo de imagem.");
+                return;
+            }
+            setError(null);
+            setStartImageFile(file);
+            setStartImageUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleFileSelect(e.target.files?.[0] || null);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); e.stopPropagation(); setDragOver(false);
+        handleFileSelect(e.dataTransfer.files?.[0] || null);
+    };
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); e.stopPropagation(); setDragOver(true);
+    };
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); e.stopPropagation(); setDragOver(false);
+    };
+
+    const handleGenerate = useCallback(async () => {
+        if (!prompt || isLoading) return;
+
+        setIsLoading(true);
+        setError(null);
+        setVideoUrl(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+            const payload: any = {
+                model: 'veo-3.1-fast-generate-preview',
+                prompt: prompt,
+                config: {
+                    numberOfVideos: 1,
+                    resolution: resolution,
+                    aspectRatio: aspectRatio
+                }
+            };
+            
+            if (startImageFile) {
+                const base64Data = await fileToBase64(startImageFile);
+                payload.image = { imageBytes: base64Data, mimeType: startImageFile.type };
+            }
+
+            let operation = await ai.models.generateVideos(payload);
+
+            while (!operation.done) {
+                await new Promise(resolve => setTimeout(resolve, 10000));
+                operation = await ai.operations.getVideosOperation({ operation: operation });
+            }
+
+            const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+            if (downloadLink) {
+                 const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+                 const blob = await videoResponse.blob();
+                 setVideoUrl(URL.createObjectURL(blob));
+            } else {
+                throw new Error("Falha ao obter o link de download do vídeo.");
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            let errorMessage = 'Ocorreu um erro ao gerar o vídeo. Tente novamente.';
+             if (err.message && err.message.includes("Requested entity was not found.")) {
+                errorMessage = "Chave de API inválida ou não encontrada. Por favor, selecione uma chave de API válida.";
+                setApiKeySelected(false);
+            }
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [prompt, isLoading, aspectRatio, resolution, startImageFile]);
+    
+    if (!apiKeySelected) {
+        return (
+            <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
+                <h2 className="text-2xl font-bold mb-4 text-brand-light">Chave de API Necessária</h2>
+                <p className="text-gray-400 mb-6 max-w-md">Para gerar vídeos com o Cineasta IA, você precisa selecionar uma chave de API. Isso está associado à sua conta do Google Cloud para cobrança.</p>
+                <button
+                    onClick={handleSelectKey}
+                    className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+                >
+                    Selecionar Chave de API
+                </button>
+                 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="mt-4 text-sm text-brand-secondary hover:underline">
+                    Saiba mais sobre cobrança
+                </a>
+                {error && <div className="mt-4 text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
+            </div>
+        );
+    }
+
+
+    return (
+        <div className="h-full flex flex-col gap-6 animate-fade-in">
+            <div className="bg-base-200 p-6 rounded-xl shadow-lg">
+                <h2 className="text-xl font-bold mb-2 text-brand-light">Cineasta IA</h2>
+                <p className="text-gray-400 mb-6">Sua imaginação é o roteiro. Descreva qualquer cena, ajuste os detalhes e a IA a transformará em um vídeo.</p>
+                 
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column: Prompt and settings */}
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <label className="block text-gray-400 mb-2 text-sm font-semibold">1. Descreva sua cena</label>
+                            <textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="Ex: Um holograma neon de um gato dirigindo em alta velocidade por uma cidade cyberpunk chuvosa"
+                                className="w-full h-32 p-3 bg-base-300 border border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all resize-none"
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-gray-400 mb-2 text-sm font-semibold">2. Configurações</label>
+                             <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm text-gray-300 w-24">Proporção:</span>
+                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                        <button onClick={() => setAspectRatio('16:9')} className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${aspectRatio === '16:9' ? 'bg-brand-primary text-white' : 'bg-base-300 text-gray-300'}`}>Paisagem (16:9)</button>
+                                        <button onClick={() => setAspectRatio('9:16')} className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${aspectRatio === '9:16' ? 'bg-brand-primary text-white' : 'bg-base-300 text-gray-300'}`}>Retrato (9:16)</button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm text-gray-300 w-24">Resolução:</span>
+                                     <div className="flex-1 grid grid-cols-2 gap-2">
+                                        <button onClick={() => setResolution('720p')} className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${resolution === '720p' ? 'bg-brand-primary text-white' : 'bg-base-300 text-gray-300'}`}>720p (Rápido)</button>
+                                        <button onClick={() => setResolution('1080p')} className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${resolution === '1080p' ? 'bg-brand-primary text-white' : 'bg-base-300 text-gray-300'}`}>1080p (HD)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Image and Generate Button */}
+                     <div className="flex flex-col gap-4">
+                         <div>
+                            <label className="block text-gray-400 mb-2 text-sm font-semibold">3. Imagem Inicial (Opcional)</label>
+                            {startImageUrl ? (
+                                <div className="relative">
+                                    <img src={startImageUrl} alt="Imagem inicial" className="w-full h-40 object-cover rounded-lg"/>
+                                    <button onClick={() => { setStartImageUrl(null); setStartImageFile(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 leading-none text-xl">&times;</button>
+                                </div>
+                            ) : (
+                                <div 
+                                    onDrop={handleDrop} 
+                                    onDragOver={handleDragOver} 
+                                    onDragLeave={handleDragLeave}
+                                    className={`w-full h-40 border-2 border-dashed rounded-xl flex flex-col justify-center items-center text-center text-gray-500 transition-colors ${dragOver ? 'border-brand-primary bg-brand-primary/10' : 'border-gray-600'}`}
+                                >
+                                    <UploadIcon className="w-10 h-10 text-gray-600 mb-2"/>
+                                    <p className="text-sm">Arraste e solte</p>
+                                    <p className="text-xs mb-2">ou</p>
+                                    <label className="bg-base-300 hover:bg-brand-dark text-white font-bold py-1 px-3 rounded-lg cursor-pointer text-xs">
+                                        Selecione um Arquivo
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleGenerate}
+                            disabled={isLoading || !prompt}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed transition-all transform hover:scale-105 mt-auto"
+                        >
+                            {isLoading ? 'Gerando...' : 'Gerar Vídeo'}
+                        </button>
+                     </div>
+                </div>
+            </div>
+
+            <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex justify-center items-center overflow-hidden">
+                {isLoading && (
+                    <div className="text-center">
+                        <div className="animate-pulse-fast rounded-full h-16 w-16 bg-brand-primary/50 mx-auto mb-4 flex items-center justify-center">
+                           <VideoIcon className="w-8 h-8 text-brand-light"/>
+                        </div>
+                        <p className="text-gray-300 font-semibold text-lg">{loadingMessage}</p>
+                        <p className="text-gray-500 text-sm mt-2">A geração de vídeo pode levar alguns minutos. Agradecemos a sua paciência.</p>
+                    </div>
+                )}
+                {error && <div className="text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
+                {videoUrl && (
+                    <video src={videoUrl} controls autoPlay loop className="max-h-full max-w-full object-contain rounded-lg shadow-2xl animate-fade-in"/>
+                )}
+                {!videoUrl && !isLoading && !error && (
+                    <div className="text-center text-gray-500 italic">
+                        <VideoIcon className="w-24 h-24 mx-auto text-gray-600 mb-4" />
+                        Seu vídeo aparecerá aqui...
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default VideoStudio;
