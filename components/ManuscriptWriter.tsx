@@ -47,8 +47,9 @@ const ManuscriptWriter: React.FC = () => {
             });
             
             let generatedText = '';
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
-                generatedText += chunk.text;
+                generatedText += (chunk.text ?? '');
             }
             setManuscript(prev => prev + (prev.length > 0 ? '\n\n' : '') + generatedText);
 
