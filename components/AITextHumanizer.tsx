@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { FingerprintIcon } from './Icons';
@@ -21,26 +22,26 @@ const AITextHumanizer: React.FC = () => {
         setHumanizedText('');
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um editor de texto especialista em humanizar conteúdo de IA. Sua tarefa é reescrever o texto a seguir para que ele soe como se tivesse sido escrito por um humano, tornando-o indetectável por ferramentas de detecção de IA.
 
                 **Instruções para a reescrita:**
                 1.  **Varie a Estrutura da Frase:** Misture frases curtas e impactantes com frases mais longas e complexas. Evite a estrutura de frase repetitiva comum em textos de IA.
-                2.  **Use um Vocabulário Natural:** Substitua palavras excessivamente formais ou técnicas por sinônimos mais comuns e coloquiais, quando apropriado. Incorpore contrações (como "não" em vez de "não é", "você está" em vez de "você está").
-                3.  **Adicione um Toque Pessoal:** Introduza uma voz mais pessoal e menos robótica. Use expressões idiomáticas ou analogias simples para tornar o texto mais relacionável.
-                4.  **Quebre a Perfeição:** Evite a perfeição gramatical excessiva. Uma escrita humana natural às vezes usa fragmentos de frases ou começa frases com conjunções (como "E", "Mas", "Então").
-                5.  **Foque no Fluxo e Ritmo:** O texto final deve ter um fluxo de leitura suave e um ritmo natural, não a cadência monótona que a IA pode produzir.
+                2.  **Use um Vocabulário Natural:** Substitua palavras excessivamente formais ou técnicas por sinônimos mais comuns e acessíveis.
+                3.  **Adicione um Toque Pessoal:** Incorpore expressões idiomáticas, uma voz mais pessoal ou pequenas contrações (como "não" em vez de "não é") para adicionar um ritmo humano.
+                4.  **Mantenha o Significado Original:** É crucial que o texto reescrito preserve a mensagem e as informações do texto original.
 
-                **Texto a ser humanizado:**
+                **Texto para Humanizar:**
                 ---
                 ${inputText}
                 ---
 
-                **Importante:** Não adicione nenhuma introdução ou comentário seu, como "Claro, aqui está o texto humanizado:". Retorne APENAS o texto reescrito.
+                **Importante:** Retorne APENAS o texto humanizado, sem nenhuma introdução, explicação ou comentário sobre o processo.
             `;
-            
-             const resultStream = await ai.models.generateContentStream({
+
+            const resultStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-pro',
                 contents: prompt,
             });
@@ -67,18 +68,18 @@ const AITextHumanizer: React.FC = () => {
     return (
         <div className="h-full flex flex-col gap-6 animate-fade-in">
             <div className="bg-base-200 p-6 rounded-xl shadow-lg">
-                <h2 className="text-xl font-bold mb-2 text-brand-light">Humanizador de Texto IA</h2>
-                <p className="text-gray-400">Transforme o texto gerado por IA para torná-lo mais humano e ignorar a detecção de IA.</p>
+                <h2 className="text-xl font-bold mb-2 text-brand-light">Humanizador de Texto de IA</h2>
+                <p className="text-gray-400">Transforme texto gerado por IA em conteúdo que soa natural e humano, evitando a detecção.</p>
             </div>
             
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden">
                 {/* Input Panel */}
                 <div className="flex flex-col bg-base-200 rounded-xl shadow-lg p-4">
-                    <h3 className="text-lg font-semibold text-gray-300 mb-2">Texto da IA</h3>
+                    <h3 className="text-lg font-semibold text-gray-300 mb-2">Texto Gerado por IA</h3>
                     <textarea
                         value={inputText}
                         onChange={e => setInputText(e.target.value)}
-                        placeholder="Cole o texto gerado por IA aqui..."
+                        placeholder="Cole o texto que você deseja humanizar aqui..."
                         className="w-full flex-1 p-3 bg-base-300 border border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-brand-primary"
                         disabled={isLoading}
                     />
@@ -102,7 +103,7 @@ const AITextHumanizer: React.FC = () => {
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-light"></div>
                             </div>
                        )}
-                       {humanizedText ? humanizedText : <span className="text-gray-500 italic">O texto reescrito aparecerá aqui...</span>}
+                       {humanizedText ? humanizedText : <span className="text-gray-500 italic">O texto com um toque humano aparecerá aqui...</span>}
                     </div>
                 </div>
             </div>

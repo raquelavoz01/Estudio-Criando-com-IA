@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { PhotoStudioIcon, UploadIcon } from './Icons';
@@ -111,6 +112,7 @@ const AIPhotoStudio: React.FC = () => {
         setGeneratedImageUrl(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             
             const parts = [

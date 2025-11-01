@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 
@@ -33,6 +34,7 @@ const BlogPostWorkflow: React.FC = () => {
         setSelectedTitle('');
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
@@ -58,6 +60,7 @@ const BlogPostWorkflow: React.FC = () => {
         setOutline([]);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-pro',
@@ -80,6 +83,7 @@ const BlogPostWorkflow: React.FC = () => {
         setFullPost('');
         
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `Escreva um post de blog completo, detalhado e envolvente, otimizado para SEO.
             ---

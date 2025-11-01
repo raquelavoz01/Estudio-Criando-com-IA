@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { LightbulbIcon } from './Icons';
@@ -25,6 +26,7 @@ const ContentIdeaGenerator: React.FC = () => {
         setCopiedIndex(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um estrategista de conteúdo criativo e especialista em marketing digital. Gere 10 ideias de conteúdo inovadoras e envolventes para um(a) "${contentType}" sobre o seguinte tópico: "${topic}".

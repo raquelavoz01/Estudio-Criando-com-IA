@@ -2,14 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { InfluencerIcon, UploadIcon } from './Icons';
 
-const loadingMessages = [
-    "Contatando o agente de talentos de IA...",
-    "Preparando o influenciador para a câmera...",
-    "Gravando o conteúdo viral...",
-    "Editando o vídeo para máximo engajamento...",
-    "Seu influenciador está prestes a entrar no ar...",
-];
-
 type VoiceStyle = 'masculine_professional' | 'feminine_friendly' | 'neutral_clear';
 type CreationMode = 'generate' | 'upload';
 
@@ -25,13 +17,31 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+const KeySelectionScreen: React.FC<{ onKeySelect: () => void; error?: string | null }> = ({ onKeySelect, error }) => (
+    <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
+        <h2 className="text-2xl font-bold text-brand-light mb-4">Chave de API Necessária</h2>
+        {error && <div className="text-red-400 bg-red-900/50 p-3 rounded-lg text-sm mb-4 max-w-md">{error}</div>}
+        <p className="text-gray-400 max-w-md mb-6">
+            Para usar o Influenciador IA, você precisa selecionar uma chave de API do Google Cloud. O uso será associado à sua conta para cobrança e gerenciamento de cotas.
+        </p>
+        <button
+            onClick={onKeySelect}
+            className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+        >
+            Selecionar Chave de API
+        </button>
+        <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-brand-light mt-4 underline">
+            Saiba mais sobre a cobrança
+        </a>
+    </div>
+);
+
 const AIInfluencer: React.FC = () => {
-    const [apiKeySelected, setApiKeySelected] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [hasSelectedKey, setHasSelectedKey] = useState(false);
     
     const [creationMode, setCreationMode] = useState<CreationMode>('generate');
     const [imagePrompt, setImagePrompt] = useState('');
@@ -44,34 +54,18 @@ const AIInfluencer: React.FC = () => {
 
     useEffect(() => {
         const checkApiKey = async () => {
-            if (window.aistudio) {
-                const hasKey = await window.aistudio.hasSelectedApiKey();
-                setApiKeySelected(hasKey);
+            if (window.aistudio && await window.aistudio.hasSelectedApiKey()) {
+                setHasSelectedKey(true);
             }
         };
         checkApiKey();
     }, []);
-
-    useEffect(() => {
-        let interval: number;
-        if (isLoading) {
-            interval = window.setInterval(() => {
-                setLoadingMessage(prev => {
-                    const currentIndex = loadingMessages.indexOf(prev);
-                    const nextIndex = (currentIndex + 1) % loadingMessages.length;
-                    return loadingMessages[nextIndex];
-                });
-            }, 3000);
-        }
-        return () => clearInterval(interval);
-    }, [isLoading]);
     
     const handleSelectKey = async () => {
         if (window.aistudio) {
             await window.aistudio.openSelectKey();
-            setApiKeySelected(true);
-        } else {
-            setError("A funcionalidade de seleção de chave de API não está disponível.");
+            setHasSelectedKey(true);
+            setError(null);
         }
     };
 
@@ -122,7 +116,7 @@ const AIInfluencer: React.FC = () => {
             setInfluencerImageUrl(`data:image/png;base64,${base64ImageBytes}`);
         } catch (err) {
             console.error(err);
-            setError('Falha ao gerar a imagem do influenciador.');
+            setError('Falha ao gerar imagem. Verifique se sua chave de API está configurada corretamente na Vercel e tente novamente.');
         } finally {
             setIsGeneratingImage(false);
         }
@@ -170,31 +164,19 @@ const AIInfluencer: React.FC = () => {
 
         } catch (err: any) {
             console.error(err);
-            let errorMessage = 'Ocorreu um erro ao gerar o vídeo. Tente novamente.';
-             if (err.message && err.message.includes("Requested entity was not found.")) {
-                errorMessage = "Chave de API inválida. Por favor, selecione uma chave de API válida.";
-                setApiKeySelected(false);
+             if (err.message?.includes("Requested entity was not found")) {
+                setError("A chave de API selecionada é inválida. Por favor, selecione uma chave de API válida.");
+                setHasSelectedKey(false);
+            } else {
+                setError('Falha ao gerar o vídeo. Verifique se sua chave de API está configurada corretamente e tente novamente.');
             }
-            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
     }, [script, influencerImageBase64, influencerImageFile, selectedVoice, isLoading]);
-    
-    if (!apiKeySelected) {
-        return (
-            <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
-                <h2 className="text-2xl font-bold mb-4 text-brand-light">Chave de API Necessária</h2>
-                <p className="text-gray-400 mb-6 max-w-md">Para dar vida aos seus influenciadores de IA, você precisa selecionar uma chave de API do Google Cloud.</p>
-                <button onClick={handleSelectKey} className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
-                    Selecionar Chave de API
-                </button>
-                 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="mt-4 text-sm text-brand-secondary hover:underline">
-                    Saiba mais sobre cobrança
-                </a>
-                {error && <div className="mt-4 text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
-            </div>
-        );
+
+    if (!hasSelectedKey) {
+        return <KeySelectionScreen onKeySelect={handleSelectKey} error={error} />;
     }
     
     return (
@@ -247,19 +229,28 @@ const AIInfluencer: React.FC = () => {
                 </div>
             </div>
 
-             <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex justify-center items-center overflow-hidden">
+             <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex flex-col justify-center items-center min-h-0">
                 {isLoading && (
                     <div className="text-center">
                         <div className="animate-pulse-fast rounded-full h-16 w-16 bg-brand-primary/50 mx-auto mb-4 flex items-center justify-center">
                            <InfluencerIcon className="w-8 h-8 text-brand-light"/>
                         </div>
-                        <p className="text-gray-300 font-semibold text-lg">{loadingMessage}</p>
+                        <p className="text-gray-300 font-semibold text-lg">Gravando o conteúdo viral...</p>
                         <p className="text-gray-500 text-sm mt-2">A criação do seu vídeo pode levar alguns minutos.</p>
                     </div>
                 )}
                 {error && <div className="text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>}
                 {videoUrl && (
-                    <video src={videoUrl} controls autoPlay loop className="max-h-full max-w-full object-contain rounded-lg shadow-2xl animate-fade-in"/>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 animate-fade-in">
+                        <video src={videoUrl} controls autoPlay loop className="max-h-[85%] max-w-full object-contain rounded-lg shadow-2xl"/>
+                        <a 
+                            href={videoUrl} 
+                            download="influenciador-ia.mp4" 
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        >
+                            Baixar Vídeo
+                        </a>
+                    </div>
                 )}
                 {!videoUrl && !isLoading && !error && (
                     <div className="text-center text-gray-500 italic">

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { HyperRealisticIcon, UploadIcon } from './Icons';
@@ -92,6 +93,7 @@ const AIHyperRealisticPhotos: React.FC = () => {
         setResultImageUrl(null);
     
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const base64Data = await fileToBase64(sourceImageFile);
             

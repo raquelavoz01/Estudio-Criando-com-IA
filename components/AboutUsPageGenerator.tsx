@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { OfficeBuildingIcon } from './Icons';
@@ -27,6 +28,7 @@ const AboutUsPageGenerator: React.FC = () => {
         setGeneratedText('');
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um copywriter sênior especializado em branding e storytelling. Crie uma página "Sobre Nós" completa e envolvente para o seguinte negócio.

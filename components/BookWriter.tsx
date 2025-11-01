@@ -19,6 +19,7 @@ const BookWriter: React.FC = () => {
         setSynopsis('');
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const finalPrompt = `
                 Aja como um escritor de best-sellers. Crie um conteúdo rico e detalhado para um livro com base na seguinte solicitação: "${prompt}".
@@ -50,6 +51,7 @@ const BookWriter: React.FC = () => {
         setIsSynopsisLoading(true);
         setError(null);
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',

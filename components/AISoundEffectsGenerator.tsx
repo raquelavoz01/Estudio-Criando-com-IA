@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { SoundWaveIcon } from './Icons';
@@ -26,6 +27,7 @@ const AISoundEffectsGenerator: React.FC = () => {
         setAudioUrl(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             
             const finalPrompt = `Gere o seguinte efeito sonoro: ${prompt}. Não diga as palavras, crie o som.`;

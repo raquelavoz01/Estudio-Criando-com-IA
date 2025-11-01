@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { MetaDescriptionIcon } from './Icons';
@@ -25,6 +26,7 @@ const MetaDescriptionGenerator: React.FC = () => {
         setDescriptions([]);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um especialista em SEO. Gere 3 meta descrições otimizadas para uma página da web.
@@ -96,25 +98,25 @@ const MetaDescriptionGenerator: React.FC = () => {
                     disabled={isLoading || !topic || !keywords}
                     className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 flex items-center justify-center gap-2"
                 >
-                    {isLoading ? <LoadingSpinner /> : 'Gerar Descrições'}
+                    {isLoading ? <LoadingSpinner /> : 'Gerar Meta Descrições'}
                 </button>
                 {error && <div className="mt-4 text-red-400 bg-red-900/50 p-3 rounded-lg text-sm">{error}</div>}
             </div>
 
             <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg overflow-y-auto">
-                 <h3 className="text-xl font-bold text-brand-light mb-4">Resultados</h3>
+                <h3 className="text-xl font-bold text-brand-light mb-4">Meta Descrições Sugeridas</h3>
                 {isLoading && (
                     <div className="flex justify-center items-center h-full">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
-                            <p className="text-gray-400">Gerando descrições que geram cliques...</p>
+                            <p className="text-gray-400">Criando descrições que geram cliques...</p>
                         </div>
                     </div>
                 )}
-                 {descriptions.length > 0 && !isLoading && (
-                     <div className="space-y-4 animate-fade-in">
+                {descriptions.length > 0 && !isLoading && (
+                    <div className="space-y-4">
                         {descriptions.map((desc, i) => (
-                            <div key={i} className="bg-base-300 p-4 rounded-lg">
+                            <div key={i} className="bg-base-300 p-4 rounded-lg animate-fade-in">
                                 <p className="text-gray-300 mb-2">{desc}</p>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-gray-500">{desc.length} caracteres</span>
@@ -124,8 +126,8 @@ const MetaDescriptionGenerator: React.FC = () => {
                                 </div>
                             </div>
                         ))}
-                     </div>
-                 )}
+                    </div>
+                )}
                 {!descriptions.length && !isLoading && (
                     <div className="text-center text-gray-500 italic mt-10">
                         <MetaDescriptionIcon className="w-24 h-24 mx-auto text-gray-600 mb-4" />

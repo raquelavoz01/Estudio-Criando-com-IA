@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, Chat as GenAIChat } from '@google/genai';
 import { ChatIcon, PaperClipIcon, XCircleIcon } from './Icons';
@@ -30,6 +31,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const chatInstance = ai.chats.create({
                 model: 'gemini-2.5-pro',

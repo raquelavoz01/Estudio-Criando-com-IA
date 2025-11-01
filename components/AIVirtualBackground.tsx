@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { VirtualBackgroundIcon } from './Icons';
@@ -39,6 +40,7 @@ const AIVirtualBackground: React.FC = () => {
         setImageUrl(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             
             const finalPrompt = `Crie um fundo virtual fotorrealista para videoconferências (Zoom, Google Meet). A imagem deve ter uma proporção de 16:9 (paisagem). O fundo deve ter uma aparência profissional, com boa iluminação e um leve desfoque de profundidade para parecer realista quando uma pessoa estiver na frente dele. A cena descrita é: "${prompt}".`;

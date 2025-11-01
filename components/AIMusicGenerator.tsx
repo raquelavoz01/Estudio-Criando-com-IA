@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { MusicIcon } from './Icons';
@@ -13,6 +14,45 @@ function decode(base64: string): Uint8Array {
     }
     return bytes;
 }
+
+// Helper function to write strings to a DataView
+function writeString(view: DataView, offset: number, string: string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+// Function to convert raw PCM data to a WAV file Blob
+function pcmToWav(pcmData: Uint8Array, sampleRate: number, numChannels: number, bitsPerSample: number): Blob {
+    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = pcmData.length;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    // RIFF chunk descriptor
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+    // "fmt " sub-chunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // Subchunk1Size
+    view.setUint16(20, 1, true); // AudioFormat (1=PCM)
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    // "data" sub-chunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Write PCM data
+    new Uint8Array(buffer, 44).set(pcmData);
+
+    return new Blob([view], { type: 'audio/wav' });
+}
+
 
 const AIMusicGenerator: React.FC = () => {
     const [prompt, setPrompt] = useState('');
@@ -31,6 +71,7 @@ const AIMusicGenerator: React.FC = () => {
         setAudioUrl(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
             // 1. Generate Lyrics
@@ -63,7 +104,8 @@ const AIMusicGenerator: React.FC = () => {
             }
             
             const audioBytes = decode(base64Audio);
-            const blob = new Blob([audioBytes], { type: 'audio/mpeg' });
+            // Convert raw PCM to a proper WAV Blob
+            const blob = pcmToWav(audioBytes, 24000, 1, 16);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
 

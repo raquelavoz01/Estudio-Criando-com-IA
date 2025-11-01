@@ -14,20 +14,24 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-const designLoadingMessages = [
-    "Consultando arquitetos de IA...",
-    "Esboçando novas possibilidades...",
-    "Aplicando texturas e materiais...",
-    "Harmonizando cores e luzes...",
-];
-
-const videoLoadingMessages = [
-    "Construindo a planta 3D...",
-    "Aplicando texturas e iluminação fotorrealista...",
-    "Renderizando sua tour virtual imersiva...",
-    "Calculando os movimentos da câmera cinematográfica...",
-    "Dando os toques finais na sua experiência 3D...",
-];
+const KeySelectionScreen: React.FC<{ onKeySelect: () => void; error?: string | null }> = ({ onKeySelect, error }) => (
+    <div className="h-full flex flex-col justify-center items-center text-center bg-base-200 p-6 rounded-xl shadow-lg animate-fade-in">
+        <h2 className="text-2xl font-bold text-brand-light mb-4">Chave de API Necessária</h2>
+         {error && <div className="text-red-400 bg-red-900/50 p-3 rounded-lg text-sm mb-4 max-w-md">{error}</div>}
+        <p className="text-gray-400 max-w-md mb-6">
+            Para criar tours virtuais em 3D, você precisa selecionar uma chave de API do Google Cloud. O uso será associado à sua conta para cobrança e gerenciamento de cotas.
+        </p>
+        <button
+            onClick={onKeySelect}
+            className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+        >
+            Selecionar Chave de API
+        </button>
+        <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-brand-light mt-4 underline">
+            Saiba mais sobre a cobrança
+        </a>
+    </div>
+);
 
 
 const AIDesigner: React.FC = () => {
@@ -35,54 +39,31 @@ const AIDesigner: React.FC = () => {
     const [currentDesign, setCurrentDesign] = useState<{ url: string; base64: string } | null>(null);
     const [prompt, setPrompt] = useState('');
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [hasSelectedKey, setHasSelectedKey] = useState(false);
+    const [showKeyScreen, setShowKeyScreen] = useState(false);
 
     const [isLoadingDesign, setIsLoadingDesign] = useState(false);
     const [isLoadingVideo, setIsLoadingVideo] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [loadingMessage, setLoadingMessage] = useState('');
-    const [apiKeySelected, setApiKeySelected] = useState(false);
     const [dragOver, setDragOver] = useState(false);
 
     useEffect(() => {
         const checkApiKey = async () => {
-            if (window.aistudio) {
-                const hasKey = await window.aistudio.hasSelectedApiKey();
-                setApiKeySelected(hasKey);
+            if (window.aistudio && await window.aistudio.hasSelectedApiKey()) {
+                setHasSelectedKey(true);
             }
         };
         checkApiKey();
     }, []);
     
-    useEffect(() => {
-        let interval: number;
-        if (isLoadingDesign) {
-            setLoadingMessage(designLoadingMessages[0]);
-            interval = window.setInterval(() => {
-                setLoadingMessage(prev => {
-                    const messages = designLoadingMessages;
-                    const nextIndex = (messages.indexOf(prev) + 1) % messages.length;
-                    return messages[nextIndex];
-                });
-            }, 2500);
-        } else if (isLoadingVideo) {
-             setLoadingMessage(videoLoadingMessages[0]);
-             interval = window.setInterval(() => {
-                setLoadingMessage(prev => {
-                    const messages = videoLoadingMessages;
-                    const nextIndex = (messages.indexOf(prev) + 1) % messages.length;
-                    return messages[nextIndex];
-                });
-            }, 4000);
-        }
-        return () => clearInterval(interval);
-    }, [isLoadingDesign, isLoadingVideo]);
-
     const handleSelectKey = async () => {
         if (window.aistudio) {
             await window.aistudio.openSelectKey();
-            setApiKeySelected(true);
-        } else {
-            setError("A funcionalidade de seleção de chave de API não está disponível.");
+            setHasSelectedKey(true);
+            setError(null);
+            setShowKeyScreen(false);
+            // After selection, try generating video again
+            handleGenerateVideo();
         }
     };
     
@@ -143,7 +124,7 @@ const AIDesigner: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            setError('Ocorreu um erro ao gerar o design. Tente novamente.');
+            setError('Falha ao gerar o design. Verifique se sua chave de API está configurada corretamente na Vercel e tente novamente.');
         } finally {
             setIsLoadingDesign(false);
         }
@@ -151,9 +132,8 @@ const AIDesigner: React.FC = () => {
     
      const handleGenerateVideo = useCallback(async () => {
         if (!currentDesign) return;
-        
-        if (!apiKeySelected) {
-            handleSelectKey();
+        if (!hasSelectedKey) {
+            setShowKeyScreen(true);
             return;
         }
 
@@ -189,16 +169,99 @@ const AIDesigner: React.FC = () => {
 
         } catch (err: any) {
             console.error(err);
-            let errorMessage = 'Ocorreu um erro ao gerar o vídeo. Tente novamente.';
-             if (err.message && err.message.includes("Requested entity was not found.")) {
-                errorMessage = "Chave de API inválida. Por favor, selecione uma chave de API válida.";
-                setApiKeySelected(false);
+             if (err.message?.includes("Requested entity was not found")) {
+                setError("A chave de API selecionada é inválida. Por favor, selecione uma chave de API válida.");
+                setHasSelectedKey(false);
+                setShowKeyScreen(true);
+            } else {
+                setError('Falha ao gerar o vídeo. Verifique se sua chave de API está configurada corretamente e tente novamente.');
             }
-            setError(errorMessage);
         } finally {
             setIsLoadingVideo(false);
         }
-    }, [currentDesign, apiKeySelected]);
+    }, [currentDesign, hasSelectedKey]);
+
+    const renderMainContent = () => (
+        <>
+            <div className="bg-base-200 p-6 rounded-xl shadow-lg">
+                <div className="flex flex-col md:flex-row gap-4 items-start">
+                    <textarea 
+                        value={prompt} 
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="Ex: Faça este quarto parecer moderno e minimalista com cores neutras e madeira clara"
+                        className="w-full h-24 md:h-auto md:flex-1 p-3 bg-base-300 border border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-brand-primary"
+                        disabled={isLoadingDesign || isLoadingVideo}
+                    />
+                     <button 
+                        onClick={handleGenerateDesign} 
+                        disabled={!prompt || isLoadingDesign || isLoadingVideo}
+                        className="w-full md:w-auto bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg disabled:bg-gray-500 transition-all"
+                    >
+                        {currentDesign ? 'Refinar Design' : 'Gerar Design'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex flex-col min-h-0">
+                {videoUrl ? (
+                     <div className="h-full flex flex-col items-center justify-center gap-4">
+                        <h3 className="text-xl font-bold text-brand-light">Sua Tour Virtual 3D</h3>
+                         <video src={videoUrl} controls autoPlay loop className="max-h-[80%] max-w-full object-contain rounded-lg shadow-2xl animate-fade-in"/>
+                         <div className="flex gap-4">
+                            <button onClick={() => setVideoUrl(null)} className="bg-brand-primary hover:bg-brand-dark text-white font-bold py-2 px-4 rounded-lg">Voltar ao Design</button>
+                            <a 
+                                href={videoUrl} 
+                                download="tour-virtual-3d.mp4" 
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg flex items-center"
+                            >
+                                Baixar Vídeo
+                            </a>
+                        </div>
+                     </div>
+                ) : isLoadingVideo ? (
+                     <div className="flex-1 flex flex-col justify-center items-center text-center">
+                        <div className="animate-pulse-fast rounded-full h-16 w-16 bg-brand-primary/50 mx-auto mb-4 flex items-center justify-center">
+                           <VideoIcon className="w-8 h-8 text-brand-light"/>
+                        </div>
+                        <p className="text-gray-300 font-semibold text-lg">Renderizando sua tour virtual...</p>
+                        <p className="text-gray-500 text-sm mt-2 max-w-md">Converta seus projetos de interiores gerados por IA em impressionantes vídeos 3D.</p>
+                     </div>
+                ) : (
+                     <>
+                     <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-brand-light">Visualização do Design</h3>
+                        {currentDesign && (
+                            <button onClick={handleGenerateVideo} disabled={isLoadingDesign} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-500 transition-all flex items-center gap-2">
+                                <VideoIcon className="w-5 h-5"/>
+                                Criar Vídeo 3D
+                            </button>
+                        )}
+                     </div>
+                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
+                        <div className="flex flex-col items-center p-2 bg-base-300/50 rounded-lg overflow-hidden">
+                            <h4 className="text-lg font-semibold text-gray-400 mb-2">Original</h4>
+                            <img src={originalImage!.url} alt="Original" className="w-full h-full object-contain rounded-lg"/>
+                        </div>
+                         <div className="flex flex-col items-center p-2 bg-base-300/50 rounded-lg overflow-hidden">
+                            <h4 className="text-lg font-semibold text-gray-400 mb-2">Design da IA</h4>
+                            <div className="w-full h-full flex items-center justify-center">
+                                {isLoadingDesign && (
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-light mx-auto"></div>
+                                        <p className="text-gray-400 mt-2">Esboçando novas possibilidades...</p>
+                                    </div>
+                                )}
+                                {currentDesign && !isLoadingDesign && <img src={currentDesign.url} alt="Design da IA" className="w-full h-full object-contain rounded-lg animate-fade-in"/>}
+                                {!currentDesign && !isLoadingDesign && <p className="text-gray-500 italic text-center">Seu novo design aparecerá aqui...</p>}
+                            </div>
+                        </div>
+                     </div>
+                     </>
+                )}
+                 {error && !showKeyScreen && <div className="mt-4 text-red-400 bg-red-900/50 p-3 rounded-lg text-sm self-center">{error}</div>}
+            </div>
+        </>
+    );
 
     return (
         <div className="h-full flex flex-col gap-6 animate-fade-in">
@@ -206,8 +269,12 @@ const AIDesigner: React.FC = () => {
                 <h2 className="text-xl font-bold mb-2 text-brand-light">Designer de Interiores com IA</h2>
                 <p className="text-gray-400">Tire uma foto e redesenhe seu interior em segundos. Carregue uma foto do seu quarto, jardim ou qualquer espaço e deixe a IA fazer o resto.</p>
             </div>
-            
-            {!originalImage && (
+
+            {showKeyScreen ? (
+                <div className="flex-1 flex flex-col justify-center items-center">
+                     <KeySelectionScreen onKeySelect={handleSelectKey} error={error} />
+                </div>
+            ) : !originalImage ? (
                  <div 
                     onDrop={handleDrop} 
                     onDragOver={handleDragOver} 
@@ -222,79 +289,8 @@ const AIDesigner: React.FC = () => {
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
                     </label>
                 </div>
-            )}
-            
-            {originalImage && (
-                <>
-                <div className="bg-base-200 p-6 rounded-xl shadow-lg">
-                    <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <textarea 
-                            value={prompt} 
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Ex: Faça este quarto parecer moderno e minimalista com cores neutras e madeira clara"
-                            className="w-full h-24 md:h-auto md:flex-1 p-3 bg-base-300 border border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-brand-primary"
-                            disabled={isLoadingDesign || isLoadingVideo}
-                        />
-                         <button 
-                            onClick={handleGenerateDesign} 
-                            disabled={!prompt || isLoadingDesign || isLoadingVideo}
-                            className="w-full md:w-auto bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg disabled:bg-gray-500 transition-all"
-                        >
-                            {currentDesign ? 'Refinar Design' : 'Gerar Design'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 bg-base-200 p-6 rounded-xl shadow-lg flex flex-col overflow-hidden">
-                    {videoUrl ? (
-                         <div className="h-full flex flex-col items-center justify-center">
-                            <h3 className="text-xl font-bold text-brand-light mb-4">Sua Tour Virtual 3D</h3>
-                             <video src={videoUrl} controls autoPlay loop className="max-h-[80%] max-w-full object-contain rounded-lg shadow-2xl animate-fade-in"/>
-                             <button onClick={() => setVideoUrl(null)} className="mt-4 bg-brand-primary hover:bg-brand-dark text-white font-bold py-2 px-4 rounded-lg">Voltar ao Design</button>
-                         </div>
-                    ) : isLoadingVideo ? (
-                         <div className="flex-1 flex flex-col justify-center items-center text-center">
-                            <div className="animate-pulse-fast rounded-full h-16 w-16 bg-brand-primary/50 mx-auto mb-4 flex items-center justify-center">
-                               <VideoIcon className="w-8 h-8 text-brand-light"/>
-                            </div>
-                            <p className="text-gray-300 font-semibold text-lg">{loadingMessage}</p>
-                            <p className="text-gray-500 text-sm mt-2 max-w-md">Converta seus projetos de interiores gerados por IA em impressionantes vídeos 3D. Experimente seu espaço de todos os ângulos com tours virtuais dinâmicos que dão vida à sua visão.</p>
-                         </div>
-                    ) : (
-                         <>
-                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-brand-light">Visualização do Design</h3>
-                            {currentDesign && (
-                                <button onClick={handleGenerateVideo} disabled={isLoadingDesign} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-500 transition-all flex items-center gap-2">
-                                    <VideoIcon className="w-5 h-5"/>
-                                    Criar Vídeo 3D
-                                </button>
-                            )}
-                         </div>
-                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
-                            <div className="flex flex-col items-center p-2 bg-base-300/50 rounded-lg overflow-hidden">
-                                <h4 className="text-lg font-semibold text-gray-400 mb-2">Original</h4>
-                                <img src={originalImage.url} alt="Original" className="w-full h-full object-contain rounded-lg"/>
-                            </div>
-                             <div className="flex flex-col items-center p-2 bg-base-300/50 rounded-lg overflow-hidden">
-                                <h4 className="text-lg font-semibold text-gray-400 mb-2">Design da IA</h4>
-                                <div className="w-full h-full flex items-center justify-center">
-                                    {isLoadingDesign && (
-                                        <div className="text-center">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-light mx-auto"></div>
-                                            <p className="text-gray-400 mt-2">{loadingMessage}</p>
-                                        </div>
-                                    )}
-                                    {currentDesign && !isLoadingDesign && <img src={currentDesign.url} alt="Design da IA" className="w-full h-full object-contain rounded-lg animate-fade-in"/>}
-                                    {!currentDesign && !isLoadingDesign && <p className="text-gray-500 italic text-center">Seu novo design aparecerá aqui...</p>}
-                                </div>
-                            </div>
-                         </div>
-                         </>
-                    )}
-                     {error && <div className="mt-4 text-red-400 bg-red-900/50 p-3 rounded-lg text-sm self-center">{error}</div>}
-                </div>
-                </>
+            ) : (
+                renderMainContent()
             )}
         </div>
     )

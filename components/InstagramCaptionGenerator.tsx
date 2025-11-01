@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { InstagramIcon } from './Icons';
@@ -25,6 +26,7 @@ const InstagramCaptionGenerator: React.FC = () => {
         setCopiedIndex(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um especialista em mídias sociais e copywriting. Crie 3 legendas para uma postagem no Instagram com base nos seguintes detalhes. Cada legenda deve ser única e separada por '---'.

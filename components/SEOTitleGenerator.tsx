@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { TrendingUpIcon } from './Icons';
@@ -28,6 +29,7 @@ const SEOTitleGenerator: React.FC = () => {
         setResults({ titles: [], descriptions: [] });
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um especialista em SEO e copywriting com 10 anos de experiência.

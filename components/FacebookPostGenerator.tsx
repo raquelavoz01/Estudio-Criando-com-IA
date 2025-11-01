@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { FacebookIcon } from './Icons';
@@ -25,6 +26,7 @@ const FacebookPostGenerator: React.FC = () => {
         setCopiedIndex(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um gerente de mídias sociais experiente. Crie 3 postagens envolventes para o Facebook com base nos seguintes detalhes. Cada postagem deve ser única e separada por '---'.
@@ -65,7 +67,7 @@ const FacebookPostGenerator: React.FC = () => {
     return (
         <div className="h-full flex flex-col gap-6 animate-fade-in">
             <div className="bg-base-200 p-6 rounded-xl shadow-lg">
-                <div className="flex justify-between items-start">
+                 <div className="flex justify-between items-start">
                     <div>
                         <h2 className="text-xl font-bold mb-2 text-brand-light">Gerador de Postagens do Facebook</h2>
                         <p className="text-gray-400 mb-6">Crie facilmente postagens únicas e de alta qualidade para sua página do Facebook - com apenas um clique!</p>

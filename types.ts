@@ -70,16 +70,3 @@ export enum StudioView {
     UsagePolicy = 'usage_policy',
     Plans = 'plans',
 }
-
-// FIX: Moved the AIStudio interface inside the `declare global` block.
-// This makes AIStudio a global type, resolving the "Subsequent property declarations must have the same type" error
-// by ensuring that all references to `window.aistudio` use the same, globally defined AIStudio type.
-declare global {
-    interface AIStudio {
-        hasSelectedApiKey: () => Promise<boolean>;
-        openSelectKey: () => Promise<void>;
-    }
-    interface Window {
-        aistudio?: AIStudio;
-    }
-}
