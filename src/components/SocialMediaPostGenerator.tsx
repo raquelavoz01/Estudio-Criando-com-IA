@@ -7,6 +7,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 type Platform = 'Facebook' | 'Instagram' | 'Twitter (X)' | 'LinkedIn';
+// FIX: Changed 'Divertido' to 'Amigável' to match component state and UI, resolving TypeScript error.
 type PostTone = 'Amigável' | 'Profissional' | 'Inspirador' | 'Informativo';
 
 const SocialMediaPostGenerator: React.FC = () => {
@@ -27,6 +28,7 @@ const SocialMediaPostGenerator: React.FC = () => {
         setCopiedIndex(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um gerente de mídias sociais especialista. Crie 3 postagens de mídia social únicas para a plataforma "${platform}".
@@ -47,7 +49,7 @@ const SocialMediaPostGenerator: React.FC = () => {
                 contents: prompt,
             });
 
-            const generatedPosts = response.text.split('---').map(p => p.trim()).filter(p => p);
+            const generatedPosts = (response.text ?? '').split('---').map(p => p.trim()).filter(p => p);
             setPosts(generatedPosts);
 
         } catch (err) {

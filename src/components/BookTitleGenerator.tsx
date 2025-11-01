@@ -43,6 +43,7 @@ const BookTitleGenerator: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access response.text
             const generatedTitles = (response.text ?? '').split('\n').map(t => t.trim()).filter(t => t);
             setTitles(generatedTitles);
 
@@ -133,5 +134,4 @@ const BookTitleGenerator: React.FC = () => {
     );
 };
 
-// FIX: Add missing default export
 export default BookTitleGenerator;

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { DocumentTextIcon } from './Icons';
@@ -48,6 +47,7 @@ const ManuscriptWriter: React.FC = () => {
             });
             
             let generatedText = '';
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 generatedText += (chunk.text ?? '');
             }
@@ -76,4 +76,42 @@ const ManuscriptWriter: React.FC = () => {
             
             <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
                 <div className="w-full md:w-1/3 flex flex-col gap-4 bg-base-200 rounded-xl shadow-lg p-6">
-                    <h3 className="text-lg font-bold text-brand-light border-b border-gray-700 pb-2">Assist
+                    <h3 className="text-lg font-bold text-brand-light border-b border-gray-700 pb-2">Assistente de IA</h3>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-400 mb-2">Objetivo do Capítulo Atual</label>
+                        <textarea
+                            value={chapterGoal}
+                            onChange={e => setChapterGoal(e.target.value)}
+                            placeholder="Ex: Apresentar o vilão e sua motivação, criar um conflito entre os protagonistas..."
+                            className="w-full h-24 p-2 bg-base-300 rounded-lg text-sm"
+                            disabled={isLoading}
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <button onClick={() => handleAiAction('continue')} disabled={isLoading} className="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 flex items-center justify-center gap-2">
+                           {isLoading ? <LoadingSpinner /> : 'Continuar Escrevendo'}
+                        </button>
+                         <button onClick={() => handleAiAction('add_dialogue')} disabled={isLoading || !chapterGoal} className="w-full bg-brand-secondary hover:bg-brand-primary text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 flex items-center justify-center gap-2">
+                            {isLoading ? <LoadingSpinner /> : 'Adicionar Diálogo'}
+                        </button>
+                         <button onClick={() => handleAiAction('add_description')} disabled={isLoading || !chapterGoal} className="w-full bg-brand-secondary hover:bg-brand-primary text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 flex items-center justify-center gap-2">
+                            {isLoading ? <LoadingSpinner /> : 'Adicionar Descrição'}
+                        </button>
+                    </div>
+                     {error && <div className="mt-2 text-red-400 bg-red-900/50 p-3 rounded-lg text-sm">{error}</div>}
+                </div>
+                <div className="flex-1 flex flex-col bg-base-200 rounded-xl shadow-lg p-4">
+                     <textarea
+                        ref={editorRef}
+                        value={manuscript}
+                        onChange={e => setManuscript(e.target.value)}
+                        placeholder="Comece seu manuscrito aqui..."
+                        className="w-full h-full p-3 bg-base-300 border border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none resize-none text-lg leading-relaxed"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ManuscriptWriter;

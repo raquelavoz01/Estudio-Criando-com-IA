@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { MetaDescriptionIcon } from './Icons';
@@ -26,6 +25,7 @@ const MetaDescriptionGenerator: React.FC = () => {
         setDescriptions([]);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um especialista em SEO. Gere 3 meta descrições otimizadas para uma página da web.

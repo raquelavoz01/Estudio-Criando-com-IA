@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { CubeIcon } from './Icons';
@@ -41,6 +40,7 @@ const ExplainLikeImFive: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setSimplifiedText(prev => prev + (chunk.text ?? ''));
             }

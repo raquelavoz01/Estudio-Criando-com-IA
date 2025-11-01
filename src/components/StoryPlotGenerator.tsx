@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { MapIcon } from './Icons';
@@ -53,6 +52,7 @@ const StoryPlotGenerator: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setPlot(prev => prev + (chunk.text ?? ''));
             }

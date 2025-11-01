@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { KeyIcon } from './Icons';
@@ -23,6 +22,7 @@ const KeywordGenerator: React.FC = () => {
         setKeywords([]);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um especialista em SEO. Analise o seguinte texto e extraia as ${numKeywords} palavras-chave mais relevantes e importantes.

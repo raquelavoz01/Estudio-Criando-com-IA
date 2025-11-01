@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 
@@ -49,14 +48,15 @@ const LongFormEditor: React.FC = () => {
         }
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const resultStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-pro',
                 contents: prompt,
             });
             
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
-                // FIX: Safely access chunk.text
                 setGeneratedText(prev => prev + (chunk.text ?? ''));
             }
 

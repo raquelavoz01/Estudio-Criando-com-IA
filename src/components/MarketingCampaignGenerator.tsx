@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { MegaphoneIcon } from './Icons';
@@ -57,6 +56,7 @@ const MarketingCampaignGenerator: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setGeneratedText(prev => prev + (chunk.text ?? ''));
             }

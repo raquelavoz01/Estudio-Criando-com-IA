@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { CheckCircleIcon } from './Icons';
@@ -40,6 +39,7 @@ const GrammarChecker: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setCorrectedText(prev => prev + (chunk.text ?? ''));
             }

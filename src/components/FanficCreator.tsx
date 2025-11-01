@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { UsersIcon } from './Icons';
@@ -48,6 +47,7 @@ const FanficCreator: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Add nullish coalescing to safely handle potentially undefined chunk.text
             for await (const chunk of resultStream) {
                 setStory(prev => prev + (chunk.text ?? ''));
             }

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { BriefcaseIcon } from './Icons';
@@ -29,6 +28,7 @@ const CompanyProfileGenerator: React.FC = () => {
         setGeneratedText('');
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um consultor de negócios e copywriter sênior. Crie um perfil de empresa completo e profissional.
@@ -59,6 +59,7 @@ const CompanyProfileGenerator: React.FC = () => {
                 contents: prompt,
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setGeneratedText(prev => prev + (chunk.text ?? ''));
             }

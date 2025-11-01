@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, Chat as GenAIChat } from '@google/genai';
 import { ChatIcon, PaperClipIcon, XCircleIcon } from './Icons';
@@ -69,15 +68,19 @@ const Chat: React.FC = () => {
         try {
             const result = await chat.sendMessageStream({ message: userMessageText });
             
+            // FIX: Updated state immutably for streaming response.
             for await (const chunk of result) {
-                // FIX: Safely access chunk.text
                 const chunkText = chunk.text ?? '';
-                setMessages(prev => {
-                    const lastMessage = prev[prev.length - 1];
-                    if (lastMessage.role === 'model') {
-                        lastMessage.text += chunkText;
+                setMessages(prevMessages => {
+                    const lastMessage = prevMessages[prevMessages.length - 1];
+                    if (lastMessage && lastMessage.role === 'model') {
+                        // Create a new array with the last message updated immutably
+                        return [
+                            ...prevMessages.slice(0, -1),
+                            { ...lastMessage, text: lastMessage.text + chunkText },
+                        ];
                     }
-                    return [...prev];
+                    return prevMessages;
                 });
             }
 

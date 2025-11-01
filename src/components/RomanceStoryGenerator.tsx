@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { HeartIcon } from './Icons';
@@ -45,6 +44,7 @@ const RomanceStoryGenerator: React.FC = () => {
                 }
             });
 
+            // FIX: Safely access chunk.text
             for await (const chunk of resultStream) {
                 setStory(prev => prev + (chunk.text ?? ''));
             }

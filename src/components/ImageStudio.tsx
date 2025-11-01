@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { ImageIcon, UploadIcon } from './Icons';
@@ -110,7 +109,7 @@ const ImageStudio: React.FC = () => {
                     },
                 });
     
-                // FIX: Use optional chaining for safer access.
+                // FIX: Safely access response properties
                 const base64ImageBytes = response.generatedImages?.[0]?.image.imageBytes;
                 if (base64ImageBytes) {
                     const url = `data:image/png;base64,${base64ImageBytes}`;
