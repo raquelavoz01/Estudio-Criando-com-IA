@@ -34,7 +34,8 @@ const BookWriter: React.FC = () => {
                 }
             });
             
-            setGeneratedContent(response.text);
+            // FIX: Safely access response.text
+            setGeneratedContent(response.text ?? '');
 
         } catch (err) {
             console.error(err);
@@ -55,7 +56,8 @@ const BookWriter: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: `Crie uma sinopse concisa e envolvente com no máximo 3 parágrafos para o seguinte texto de livro: "${generatedContent}"`,
             });
-            setSynopsis(response.text);
+            // FIX: Safely access response.text
+            setSynopsis(response.text ?? '');
         } catch (err) {
             console.error(err);
             setError('Ocorreu um erro ao gerar a sinopse.');
@@ -162,5 +164,4 @@ const BookWriter: React.FC = () => {
         </div>
     );
 };
-// FIX: Add missing default export
 export default BookWriter;

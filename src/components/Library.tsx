@@ -84,7 +84,7 @@ const ProjectModal = ({ project, onClose, onSave }: { project: ScriptProject, on
     );
 };
 
-// Componente Principal
+// Componente Principal de Roteiros
 const Library: React.FC = () => {
     const [projects, setProjects] = useState<ScriptProject[]>([]);
     const [viewingProject, setViewingProject] = useState<ScriptProject | null>(null);

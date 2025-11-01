@@ -28,6 +28,7 @@ const SocialMediaPostGenerator: React.FC = () => {
         setCopiedIndex(null);
 
         try {
+            // FIX: Use process.env.API_KEY as per the guidelines.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const prompt = `
                 Aja como um gerente de mídias sociais especialista. Crie 3 postagens de mídia social únicas para a plataforma "${platform}".
