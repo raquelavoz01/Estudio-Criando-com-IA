@@ -122,9 +122,26 @@ const SeriesStoryGenerator: React.FC = () => {
                     <h3 className="text-xl font-bold text-brand-light">Passo 1: Conceito da Série</h3>
                     <div>
                         <label className="block text-sm font-semibold text-gray-400 mb-2">Gênero</label>
-                        <select value={genre} onChange={e => setGenre(e.target.value)} className="w-full p-2 bg-base-300 rounded-lg">
-                            <option>Ficção Científica</option> <option>Fantasia</option> <option>Drama</option> <option>Comédia</option> <option>Suspense</option>
-                        </select>
+                        <input
+                            type="text"
+                            value={genre}
+                            onChange={e => setGenre(e.target.value)}
+                            list="genre-suggestions"
+                            placeholder="Digite ou selecione um gênero (ex: Suspense, Épico...)"
+                            className="w-full p-2 bg-base-300 rounded-lg border border-gray-600 focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                        />
+                        <datalist id="genre-suggestions">
+                            <option value="Ficção Científica" />
+                            <option value="Fantasia" />
+                            <option value="Drama" />
+                            <option value="Comédia" />
+                            <option value="Suspense" />
+                            <option value="Sobrenatural" />
+                            <option value="Épico" />
+                            <option value="Terror" />
+                            <option value="Aventura" />
+                            <option value="Mistério" />
+                        </datalist>
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-400 mb-2">Ideia Central</label>
@@ -173,7 +190,7 @@ const SeriesStoryGenerator: React.FC = () => {
                     <h3 className="text-xl font-bold text-brand-light">Passo 4: Sua História Completa</h3>
                     <p className="text-gray-400">Aqui está um resumo de toda a sua temporada, pronto para ser expandido.</p>
                     <textarea value={fullStory || `${selectedTitle}\n\n${logline}\n\n--- PERSONAGENS ---\nProtagonista: ${characters.protagonist}\nAntagonista: ${characters.antagonist}\n\n--- RESUMOS ---\n${episodeSummaries.join('\n\n')}`} readOnly className="w-full h-96 p-3 bg-base-100 rounded-lg text-gray-400 whitespace-pre-wrap"/>
-                    <div className="flex justify-between"><button onClick={resetWorkflow} className="bg-gray-600 px-6 py-2 rounded-lg font-bold">Começar de Novo</button><button onClick={() => navigator.clipboard.writeText(fullStory)} className="bg-green-600 px-6 py-2 rounded-lg font-bold">Copiar</button></div>
+                    <div className="flex justify-between"><button onClick={resetWorkflow} className="bg-gray-600 px-6 py-2 rounded-lg font-bold">Começar de Novo</button><button onClick={() => navigator.clipboard.writeText(fullStory || `${selectedTitle}\n\n${logline}\n\n--- PERSONAGENS ---\nProtagonista: ${characters.protagonist}\nAntagonista: ${characters.antagonist}\n\n--- RESUMOS ---\n${episodeSummaries.join('\n\n')}`)} className="bg-green-600 px-6 py-2 rounded-lg font-bold">Copiar</button></div>
                 </div>
             );
         }
